@@ -1,38 +1,42 @@
 import { useState } from "react";
 
 function App() {
-    const [screen, setScreen] = useState("start"); // start, game, hint, secondChance, result
+    const [screen, setScreen] = useState("modeSelect");
+    const [gameMode, setGameMode] = useState(null); // easy or hard
     const [aiImageIndex, setAiImageIndex] = useState(0);
     const [selectedImage, setSelectedImage] = useState(null);
-    const [firstTryWrong, setFirstTryWrong] = useState(false);
 
-    // 3 görsel (rastgele)
+    // 3 görsel
     const images = [
-        "https://picsum.photos/300/300?random=11",
-        "https://picsum.photos/300/300?random=22",
-        "https://picsum.photos/300/300?random=33"
+        "https://picsum.photos/300/300?random=111",
+        "https://picsum.photos/300/300?random=222",
+        "https://picsum.photos/300/300?random=333"
     ];
 
-    // AI'nın hangi görseli ürettiğini rastgele ata
-    const startGame = () => {
+    // Oyunu başlat
+    const startGame = (mode) => {
+        setGameMode(mode);
         const randomIndex = Math.floor(Math.random() * 3);
         setAiImageIndex(randomIndex);
         setSelectedImage(null);
-        setFirstTryWrong(false);
         setScreen("game");
     };
 
     // İlk seçim
     const chooseFirst = (index) => {
         if (index === aiImageIndex) {
-            // Doğruysa direkt sonuç ekranı
             setSelectedImage(index);
             setScreen("result");
         } else {
-            // Yanlışsa ipucu verilecek
-            setFirstTryWrong(true);
-            setSelectedImage(index);
-            setScreen("hint");
+            // Zor modda ipucu yok → direkt ikinci seçim ekranı
+            if (gameMode === "hard") {
+                setSelectedImage(index);
+                setScreen("secondChance");
+            } else {
+                // Kolay modda ipucu göster
+                setSelectedImage(index);
+                setScreen("hint");
+            }
         }
     };
 
@@ -44,20 +48,30 @@ function App() {
 
     return (
         <div style={{ textAlign: "center", padding: "20px" }}>
-            {/* ---------------- BAŞLANGIÇ EKRANI ---------------- */}
-            {screen === "start" && (
+            {/* ---------------- MOD SEÇİMİ ---------------- */}
+            {screen === "modeSelect" && (
                 <>
                     <h1>AI Image Game</h1>
-                    <p>3 fotoğraftan hangisinin AI tarafından üretildiğini bul!</p>
-                    <button onClick={startGame}>Başla</button>
+                    <h3>Bir oyun modu seç:</h3>
+
+                    <button
+                        onClick={() => startGame("easy")}
+                        style={{ marginRight: "20px" }}
+                    >
+                        Kolay Mod (İpuculu)
+                    </button>
+
+                    <button onClick={() => startGame("hard")}>
+                        Zor Mod (İpucusuz)
+                    </button>
                 </>
             )}
 
-            {/* ---------------- İLK TAHMİN EKRANI ---------------- */}
+            {/* ---------------- OYUN EKRANI ---------------- */}
             {screen === "game" && (
                 <>
-                    <h2>Hangisi Yapay Zeka Üretimi?</h2>
-                    <p>3 görselden birini seç.</p>
+                    <h2>Hangisi AI?</h2>
+                    <p>Mod: {gameMode === "easy" ? "Kolay" : "Zor"}</p>
 
                     <div style={{ display: "flex", justifyContent: "center", gap: "20px" }}>
                         {images.map((img, index) => (
@@ -77,27 +91,25 @@ function App() {
                 </>
             )}
 
-            {/* ---------------- İPUCU EKRANI ---------------- */}
+            {/* ---------------- İPUCU ---------------- */}
             {screen === "hint" && (
                 <>
                     <h2>Yanlış seçim!</h2>
-                    <p>İpucu: Arka plan detaylarına dikkat et, AI genelde kusur bırakır.</p>
+                    <p>İpucu: Arka planda gölgeler ve detaylara dikkat et.</p>
 
                     <button onClick={() => setScreen("secondChance")}>
-                        Tekrar Seçim Yap
+                        Tekrar Dene
                     </button>
                 </>
             )}
 
-            {/* ---------------- İKİNCİ ŞANS SEÇİMİ ---------------- */}
+            {/* ---------------- İKİNCİ SEÇİM ---------------- */}
             {screen === "secondChance" && (
                 <>
-                    <h2>İkinci Şans!</h2>
-                    <p>Kalan 2 görselden birini seç.</p>
+                    <h2>İkinci hakkın!</h2>
 
                     <div style={{ display: "flex", justifyContent: "center", gap: "20px" }}>
                         {images.map((img, index) => (
-                            // İlk seçilen fotoğraf tekrar seçilmesin
                             index !== selectedImage && (
                                 <img
                                     key={index}
@@ -116,22 +128,22 @@ function App() {
                 </>
             )}
 
-            {/* ---------------- SONUÇ EKRANI ---------------- */}
+            {/* ---------------- SONUÇ ---------------- */}
             {screen === "result" && (
                 <>
-                    <h2>Sonuç</h2>
+                    <h2>Sonuç:</h2>
 
                     {selectedImage === aiImageIndex ? (
                         <p style={{ color: "green", fontSize: "20px" }}>
-                            ✔ Doğru bildin! Yapay Zeka görselini seçtin.
+                            ✔ Doğru bildin!
                         </p>
                     ) : (
                         <p style={{ color: "red", fontSize: "20px" }}>
-                            ✘ Yanlış seçim! Doğru görsel {aiImageIndex + 1}. sıradaydı.
+                            ✘ Yanlış bildin! Doğru cevap {aiImageIndex + 1}. görseldi.
                         </p>
                     )}
 
-                    <button onClick={() => setScreen("start")}>Yeni Oyun</button>
+                    <button onClick={() => setScreen("modeSelect")}>Başa Dön</button>
                 </>
             )}
         </div>
