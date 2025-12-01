@@ -2,18 +2,17 @@ import { useState } from "react";
 
 function App() {
     const [screen, setScreen] = useState("modeSelect");
-    const [gameMode, setGameMode] = useState(null); // easy or hard
+    const [gameMode, setGameMode] = useState(null);
     const [aiImageIndex, setAiImageIndex] = useState(0);
     const [selectedImage, setSelectedImage] = useState(null);
+    const [score, setScore] = useState(0); // ⭐ 5. Hafta: Puan sistemi
 
-    // 3 görsel
     const images = [
-        "https://picsum.photos/300/300?random=111",
-        "https://picsum.photos/300/300?random=222",
-        "https://picsum.photos/300/300?random=333"
+        "https://picsum.photos/300/300?random=1111",
+        "https://picsum.photos/300/300?random=2222",
+        "https://picsum.photos/300/300?random=3333"
     ];
 
-    // Oyunu başlat
     const startGame = (mode) => {
         setGameMode(mode);
         const randomIndex = Math.floor(Math.random() * 3);
@@ -22,32 +21,47 @@ function App() {
         setScreen("game");
     };
 
-    // İlk seçim
     const chooseFirst = (index) => {
         if (index === aiImageIndex) {
+            // İlk tahminde doğru → +10 (doğru) +10 (bonus)
+            setScore(score + 20);
             setSelectedImage(index);
             setScreen("result");
         } else {
-            // Zor modda ipucu yok → direkt ikinci seçim ekranı
+            setSelectedImage(index);
             if (gameMode === "hard") {
-                setSelectedImage(index);
                 setScreen("secondChance");
             } else {
-                // Kolay modda ipucu göster
-                setSelectedImage(index);
                 setScreen("hint");
             }
         }
     };
 
-    // İkinci seçim
     const chooseSecond = (index) => {
+        if (index === aiImageIndex) {
+            // İkinci tahminde doğru → +10 puan
+            setScore(score + 10);
+        }
         setSelectedImage(index);
         setScreen("result");
     };
 
+    const resetScore = () => {
+        setScore(0);
+    };
+
     return (
         <div style={{ textAlign: "center", padding: "20px" }}>
+            {/* PUAN GÖSTERGESİ */}
+            <div style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "20px" }}>
+                Skor: {score}
+            </div>
+
+            {/* SKOR SIFIRLAMA */}
+            <button onClick={resetScore} style={{ marginBottom: "20px" }}>
+                Skoru Sıfırla
+            </button>
+
             {/* ---------------- MOD SEÇİMİ ---------------- */}
             {screen === "modeSelect" && (
                 <>
@@ -61,9 +75,7 @@ function App() {
                         Kolay Mod (İpuculu)
                     </button>
 
-                    <button onClick={() => startGame("hard")}>
-                        Zor Mod (İpucusuz)
-                    </button>
+                    <button onClick={() => startGame("hard")}>Zor Mod (İpucusuz)</button>
                 </>
             )}
 
@@ -109,8 +121,8 @@ function App() {
                     <h2>İkinci hakkın!</h2>
 
                     <div style={{ display: "flex", justifyContent: "center", gap: "20px" }}>
-                        {images.map((img, index) => (
-                            index !== selectedImage && (
+                        {images.map((img, index) =>
+                            index !== selectedImage ? (
                                 <img
                                     key={index}
                                     src={img}
@@ -122,8 +134,8 @@ function App() {
                                     }}
                                     onClick={() => chooseSecond(index)}
                                 />
-                            )
-                        ))}
+                            ) : null
+                        )}
                     </div>
                 </>
             )}
@@ -135,7 +147,7 @@ function App() {
 
                     {selectedImage === aiImageIndex ? (
                         <p style={{ color: "green", fontSize: "20px" }}>
-                            ✔ Doğru bildin!
+                            ✔ Doğru bildin! (+10 / +20)
                         </p>
                     ) : (
                         <p style={{ color: "red", fontSize: "20px" }}>
