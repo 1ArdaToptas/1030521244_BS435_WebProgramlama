@@ -1,29 +1,52 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function App() {
     const [screen, setScreen] = useState("modeSelect");
     const [gameMode, setGameMode] = useState(null);
     const [aiImageIndex, setAiImageIndex] = useState(0);
     const [selectedImage, setSelectedImage] = useState(null);
-    const [score, setScore] = useState(0); // ⭐ 5. Hafta: Puan sistemi
+    const [score, setScore] = useState(0);
+
+    // ⏱️ TIMER STATE
+    const [timeLeft, setTimeLeft] = useState(0);
 
     const images = [
-        "https://picsum.photos/300/300?random=1111",
-        "https://picsum.photos/300/300?random=2222",
-        "https://picsum.photos/300/300?random=3333"
+        "https://picsum.photos/300/300?random=11111",
+        "https://picsum.photos/300/300?random=22222",
+        "https://picsum.photos/300/300?random=33333"
     ];
 
+    // TIMER ÇALIŞTIRICI
+    useEffect(() => {
+        if (screen !== "game" && screen !== "secondChance") return;
+        if (timeLeft === 0) {
+            setScreen("result");
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            setTimeLeft(timeLeft - 1);
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [timeLeft, screen]);
+
+    // OYUN BAŞLAT
     const startGame = (mode) => {
         setGameMode(mode);
         const randomIndex = Math.floor(Math.random() * 3);
         setAiImageIndex(randomIndex);
         setSelectedImage(null);
+
+        // ⏱️ Süreyi moda göre ayarla
+        setTimeLeft(mode === "easy" ? 15 : 7);
+
         setScreen("game");
     };
 
+    // İLK SEÇİM
     const chooseFirst = (index) => {
         if (index === aiImageIndex) {
-            // İlk tahminde doğru → +10 (doğru) +10 (bonus)
             setScore(score + 20);
             setSelectedImage(index);
             setScreen("result");
@@ -37,125 +60,110 @@ function App() {
         }
     };
 
+    // İKİNCİ SEÇİM
     const chooseSecond = (index) => {
         if (index === aiImageIndex) {
-            // İkinci tahminde doğru → +10 puan
             setScore(score + 10);
         }
         setSelectedImage(index);
         setScreen("result");
     };
 
-    const resetScore = () => {
-        setScore(0);
-    };
-
     return (
         <div style={{ textAlign: "center", padding: "20px" }}>
-            {/* PUAN GÖSTERGESİ */}
-            <div style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "20px" }}>
-                Skor: {score}
-            </div>
+            {/* SCORE */}
+            <h3>Skor: {score}</h3>
 
-            {/* SKOR SIFIRLAMA */}
-            <button onClick={resetScore} style={{ marginBottom: "20px" }}>
-                Skoru Sıfırla
-            </button>
+            {/* TIMER */}
+            {(screen === "game" || screen === "secondChance") && (
+                <h3 style={{ color: timeLeft <= 3 ? "red" : "black" }}>
+                    Kalan Süre: {timeLeft}
+                </h3>
+            )}
 
-            {/* ---------------- MOD SEÇİMİ ---------------- */}
+            {/* MOD SEÇİMİ */}
             {screen === "modeSelect" && (
                 <>
                     <h1>AI Image Game</h1>
-                    <h3>Bir oyun modu seç:</h3>
-
-                    <button
-                        onClick={() => startGame("easy")}
-                        style={{ marginRight: "20px" }}
-                    >
-                        Kolay Mod (İpuculu)
+                    <p>Oyun Modu Seç</p>
+                    <button onClick={() => startGame("easy")} style={{ marginRight: 15 }}>
+                        Kolay (15 sn)
                     </button>
-
-                    <button onClick={() => startGame("hard")}>Zor Mod (İpucusuz)</button>
+                    <button onClick={() => startGame("hard")}>
+                        Zor (7 sn)
+                    </button>
                 </>
             )}
 
-            {/* ---------------- OYUN EKRANI ---------------- */}
+            {/* OYUN */}
             {screen === "game" && (
                 <>
                     <h2>Hangisi AI?</h2>
-                    <p>Mod: {gameMode === "easy" ? "Kolay" : "Zor"}</p>
-
-                    <div style={{ display: "flex", justifyContent: "center", gap: "20px" }}>
-                        {images.map((img, index) => (
+                    <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
+                        {images.map((img, i) => (
                             <img
-                                key={index}
+                                key={i}
                                 src={img}
-                                style={{
-                                    width: "200px",
-                                    height: "200px",
-                                    border: "2px solid #333",
-                                    cursor: "pointer",
-                                }}
-                                onClick={() => chooseFirst(index)}
+                                width={200}
+                                height={200}
+                                style={{ cursor: "pointer", border: "2px solid black" }}
+                                onClick={() => chooseFirst(i)}
                             />
                         ))}
                     </div>
                 </>
             )}
 
-            {/* ---------------- İPUCU ---------------- */}
+            {/* İPUCU */}
             {screen === "hint" && (
                 <>
-                    <h2>Yanlış seçim!</h2>
-                    <p>İpucu: Arka planda gölgeler ve detaylara dikkat et.</p>
-
+                    <h3>Yanlış Seçim!</h3>
+                    <p>İpucu: Kenarlardaki detaylara dikkat et.</p>
                     <button onClick={() => setScreen("secondChance")}>
-                        Tekrar Dene
+                        İkinci Şans
                     </button>
                 </>
             )}
 
-            {/* ---------------- İKİNCİ SEÇİM ---------------- */}
+            {/* İKİNCİ ŞANS */}
             {screen === "secondChance" && (
                 <>
-                    <h2>İkinci hakkın!</h2>
-
-                    <div style={{ display: "flex", justifyContent: "center", gap: "20px" }}>
-                        {images.map((img, index) =>
-                            index !== selectedImage ? (
-                                <img
-                                    key={index}
-                                    src={img}
-                                    style={{
-                                        width: "200px",
-                                        height: "200px",
-                                        border: "2px solid #333",
-                                        cursor: "pointer",
-                                    }}
-                                    onClick={() => chooseSecond(index)}
-                                />
-                            ) : null
+                    <h2>İkinci Hakkın</h2>
+                    <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
+                        {images.map(
+                            (img, i) =>
+                                i !== selectedImage && (
+                                    <img
+                                        key={i}
+                                        src={img}
+                                        width={200}
+                                        height={200}
+                                        style={{ cursor: "pointer", border: "2px solid black" }}
+                                        onClick={() => chooseSecond(i)}
+                                    />
+                                )
                         )}
                     </div>
                 </>
             )}
 
-            {/* ---------------- SONUÇ ---------------- */}
+            {/* SONUÇ */}
             {screen === "result" && (
                 <>
-                    <h2>Sonuç:</h2>
-
+                    <h2>Sonuç</h2>
+                    {timeLeft === 0 && (
+                        <p style={{ color: "red" }}>⏱️ Süre doldu!</p>
+                    )}
                     {selectedImage === aiImageIndex ? (
-                        <p style={{ color: "green", fontSize: "20px" }}>
-                            ✔ Doğru bildin! (+10 / +20)
-                        </p>
+                        <p style={{ color: "green" }}>✔ Doğru Seçim</p>
                     ) : (
-                        <p style={{ color: "red", fontSize: "20px" }}>
-                            ✘ Yanlış bildin! Doğru cevap {aiImageIndex + 1}. görseldi.
+                        <p style={{ color: "red" }}>
+                            ✘ Yanlış! Doğru: {aiImageIndex + 1}. görsel
                         </p>
                     )}
-
-                    <button onClick={() => setScreen("modeSelect")}>Başa Dön</button>
+                    <button onClick={() => setScreen("modeSelect")}>
+                        Yeni Oyun
+                    </button>
                 </>
             )}
         </div>
