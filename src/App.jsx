@@ -11,30 +11,30 @@ function pick3Unique(arr) {
 }
 
 function App() {
-    const [screen, setScreen] = useState("modeSelect");
-
-
+    const [screen, setScreen] = useState("modeSelect"); // modeSelect | name | game | hint | secondChance | lose | win
     const [gameMode, setGameMode] = useState(null); // easy | hard
-    const [stage, setStage] = useState(1);          // 1..3
+
+    const [playerName, setPlayerName] = useState("");
+    const [nameInput, setNameInput] = useState("");
+
+    const [stage, setStage] = useState(1); // 1..3
     const [score, setScore] = useState(0);
     const [timeLeft, setTimeLeft] = useState(0);
 
-    const [roundImages, setRoundImages] = useState([]); // o turda gösterilen 3 görsel
-    const [aiImageIndex, setAiImageIndex] = useState(0); // roundImages içindeki AI görsel indexi (0..2)
-    const [selectedImage, setSelectedImage] = useState(null); // ilk seçim (secondChance'ta elemek için)
-
+    const [roundImages, setRoundImages] = useState([]);
+    const [aiImageIndex, setAiImageIndex] = useState(0);
+    const [selectedImage, setSelectedImage] = useState(null);
 
     const [scores, setScores] = useState(
-        JSON.parse(localStorage.getItem("scores")) || []
+        JSON.parse(localStorage.getItem("scores_v2")) || []
     );
 
     const resetLeaderboard = () => {
         if (window.confirm("Skor tablosu sıfırlansın mı?")) {
             setScores([]);
-            localStorage.removeItem("scores");
+            localStorage.removeItem("scores_v2");
         }
     };
-
 
     const imagePool = useMemo(
         () => [
@@ -53,7 +53,6 @@ function App() {
 
     const roundTime = (mode) => (mode === "easy" ? 15 : 7);
 
-
     const setupRound = (mode, newStage) => {
         const imgs = pick3Unique(imagePool);
         setRoundImages(imgs);
@@ -64,14 +63,24 @@ function App() {
         setScreen("game");
     };
 
-
+    // Mod seçince isim ekranına git
     const startGame = (mode) => {
         setGameMode(mode);
-        setScore(0);
-        setupRound(mode, 1);
+        setNameInput("");
+        setScreen("name");
     };
 
+    // İsim onayla ve oyunu başlat
+    const confirmNameAndStart = () => {
+        const name = nameInput.trim();
+        if (!name) return;
 
+        setPlayerName(name);
+        setScore(0);
+        setupRound(gameMode, 1);
+    };
+
+    // TIMER
     useEffect(() => {
         if (screen !== "game" && screen !== "secondChance") return;
 
@@ -87,23 +96,18 @@ function App() {
         return () => clearTimeout(t);
     }, [timeLeft, screen]);
 
-
     const handleCorrect = (points) => {
         setScore((prev) => prev + points);
 
         if (stage < 3) {
-
             setupRound(gameMode, stage + 1);
         } else {
-
             setScreen("win");
         }
     };
 
-
     const chooseFirst = (index) => {
         if (index === aiImageIndex) {
-
             handleCorrect(20);
         } else {
             setSelectedImage(index);
@@ -111,26 +115,30 @@ function App() {
         }
     };
 
-
     const chooseSecond = (index) => {
         if (index === aiImageIndex) {
-
             handleCorrect(10);
         } else {
             setScreen("lose");
         }
     };
 
-
+    // WIN olunca leaderboard kaydet
     useEffect(() => {
         if (screen !== "win") return;
 
-        const newScores = [...scores, score]
-            .sort((a, b) => b - a)
+        const entry = {
+            name: playerName || "Oyuncu",
+            score,
+            date: new Date().toISOString(),
+        };
+
+        const newScores = [...scores, entry]
+            .sort((a, b) => b.score - a.score)
             .slice(0, 5);
 
         setScores(newScores);
-        localStorage.setItem("scores", JSON.stringify(newScores));
+        localStorage.setItem("scores_v2", JSON.stringify(newScores));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [screen]);
 
@@ -153,6 +161,41 @@ function App() {
                         )}
                     </div>
                 </header>
+
+                {/* İSİM EKRANI */}
+                {screen === "name" && (
+                    <>
+                        <h2 className="sectionTitle">Oyuncu Adı</h2>
+                        <p className="muted">Oyuna başlamak için adını gir.</p>
+
+                        <div className="nameBox">
+                            <input
+                                className="nameInput"
+                                type="text"
+                                placeholder="Örn: Arda"
+                                value={nameInput}
+                                onChange={(e) => setNameInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") confirmNameAndStart();
+                                }}
+                                autoFocus
+                            />
+                            <button
+                                className="btn primary"
+                                onClick={confirmNameAndStart}
+                                disabled={!nameInput.trim()}
+                            >
+                                Başla
+                            </button>
+                        </div>
+
+                        <div className="actions" style={{ marginTop: 14 }}>
+                            <button className="btn" onClick={() => setScreen("modeSelect")}>
+                                Geri
+                            </button>
+                        </div>
+                    </>
+                )}
 
                 {/* MOD SEÇİMİ */}
                 {screen === "modeSelect" && (
@@ -177,10 +220,10 @@ function App() {
                                 <p className="muted">Henüz skor yok. İlk oyunu başlat 🙂</p>
                             ) : (
                                 <ol className="leaderboard">
-                                    {scores.map((s, i) => (
+                                    {scores.map((item, i) => (
                                         <li key={i} className="leaderItem">
-                                            <span>#{i + 1}</span>
-                                            <strong>{s}</strong>
+                                            <span>{item.name}    </span>
+                                            <strong>{item.score}</strong>
                                         </li>
                                     ))}
                                 </ol>
@@ -242,8 +285,8 @@ function App() {
                     <>
                         <h2 className="sectionTitle">Kaybettin 😢</h2>
                         <p className="muted">
-                            {timeLeft <= 0 ? "Süre doldu." : "Yanlış seçim yaptın."}
-                            {" "}Ulaştığın aşama: <strong>{stage}/3</strong>
+                            {timeLeft <= 0 ? "Süre doldu." : "Yanlış seçim yaptın."} Ulaştığın aşama:{" "}
+                            <strong>{stage}/3</strong>
                         </p>
                         <div className="actions">
                             <button className="btn primary" onClick={() => setScreen("modeSelect")}>
