@@ -51,7 +51,8 @@ component yapısı kullanılmıştır.
 - **6. Hafta:** Zaman sayacı
 - **7. Hafta:** Liderlik tablosu (localStorage)
 - **8. Hafta:** README düzenleme ve proje temizliği
-- **9. Hafta :** Son düzletmeler yapıldı 
+- **9. Hafta :** Son düzletmeler yapıldı
+- **9.1 Hafta : Oyuncu adı eklendi her oyunda isim sor ve liderlik tablosunda isim+skor gösterecek şekilde ayarlandı
 ---
 
 ## Kullanılan Teknolojiler
